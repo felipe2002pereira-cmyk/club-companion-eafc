@@ -22,7 +22,12 @@
 
   chrome.storage.local.get(DEFAULTS, (saved) => { state = { ...structuredClone(DEFAULTS), ...saved, preferences: { ...DEFAULTS.preferences, ...(saved.preferences || {}) } }; state.priceAlerts = Array.isArray(state.priceAlerts) ? state.priceAlerts.filter(isValidPriceAlert) : []; render(); installAnimationSkip(); });
 
-  function save() { return new Promise((resolve) => chrome.storage.local.set(state, resolve)); }
+  function save() {
+    return new Promise((resolve) => chrome.storage.local.set(state, () => {
+      if (chrome.runtime.lastError) { setNotice('Não foi possível salvar no armazenamento local do Chrome. Tente novamente.'); resolve(false); return; }
+      resolve(true);
+    }));
+  }
   function openPanel(tab = activeTab) { activeTab = tab; panel.hidden = false; render(); }
   function closePanel() { panel.hidden = true; }
 
@@ -38,7 +43,7 @@
     if (button.dataset.action === 'protect') { toggleProtected(button.dataset.id); return; }
     if (button.dataset.action === 'send-club') { sendSelectedToClub(); return; }
     if (button.dataset.action === 'price-link') { window.open(button.dataset.url, '_blank', 'noopener,noreferrer'); return; }
-    if (button.dataset.action === 'clear-price-alert') { state.priceAlerts = state.priceAlerts.filter((alert) => !(alert.instanceId === button.dataset.instance && alert.source === button.dataset.source && alert.platform === button.dataset.platform)); await save(); setNotice('Alerta de preço removido.'); render(); return; }
+    if (button.dataset.action === 'clear-price-alert') { const previous = state.priceAlerts; state.priceAlerts = state.priceAlerts.filter((alert) => !(alert.instanceId === button.dataset.instance && alert.source === button.dataset.source && alert.platform === button.dataset.platform)); if (!await save()) { state.priceAlerts = previous; return; } setNotice('Alerta de preço removido.'); render(); return; }
     if (button.dataset.action === 'add-set') { addGallerySet(); return; }
     if (button.dataset.action === 'gallery-add') { addToGallery(button.dataset.set, button.dataset.player); return; }
     if (button.dataset.action === 'mark-used') { markPlanUsed(button.dataset.id); return; }
@@ -66,17 +71,20 @@
         const targetCoins = Number(rawTarget);
         if (!rawTarget || !Number.isSafeInteger(targetCoins) || targetCoins < 0) { setNotice('Informe um alvo inteiro e não negativo em moedas.'); return; }
         const alert = { instanceId, source, platform, targetCoins };
-        const existing = state.priceAlerts.findIndex((item) => item.instanceId === instanceId && item.source === source && item.platform === platform);
-        if (existing >= 0) state.priceAlerts[existing] = alert; else state.priceAlerts.push(alert);
-        await save(); setNotice(`Alvo salvo para ${player.name}: ${targetCoins.toLocaleString('pt-BR')} moedas.`); render(); return;
+        const previous = state.priceAlerts;
+        state.priceAlerts = state.priceAlerts.filter((item) => !(item.instanceId === instanceId && item.source === source && item.platform === platform));
+        state.priceAlerts.push(alert);
+        if (!await save()) { state.priceAlerts = previous; return; }
+        setNotice(`Alvo salvo para ${player.name}: ${targetCoins.toLocaleString('pt-BR')} moedas.`); render(); return;
       }
       const rawCoins = String(data.get('coins') || '').trim();
       const coins = Number(rawCoins);
       if (!rawCoins || !Number.isSafeInteger(coins) || coins < 0) { setNotice('Informe uma cotação inteira e não negativa em moedas.'); return; }
-      state.prices.unshift({ id: id(), instanceId, source, platform, coins, checkedAt: new Date().toISOString() });
+      const previousPrices = state.prices;
+      state.prices = [{ id: id(), instanceId, source, platform, coins, checkedAt: new Date().toISOString() }, ...state.prices];
       const target = state.priceAlerts.find((item) => item.instanceId === instanceId && item.source === source && item.platform === platform);
       const reached = target && coins <= target.targetCoins;
-      await save();
+      if (!await save()) { state.prices = previousPrices; return; }
       setNotice(reached ? `Alerta: ${player.name} está em ${coins.toLocaleString('pt-BR')} moedas (${source.toUpperCase()} · ${platform === 'pc' ? 'PC' : 'Console'}), no alvo de ${target.targetCoins.toLocaleString('pt-BR')}. Confira manualmente.` : `Cotação manual de ${player.name} registrada. Não houve alerta para esse alvo.`);
       render();
     }
