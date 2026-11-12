@@ -10,7 +10,7 @@
   stylesheet.rel = 'stylesheet'; stylesheet.href = chrome.runtime.getURL('content.css');
   shadow.append(stylesheet);
   const shell = document.createElement('div');
-  shell.innerHTML = '<button class="cc-launcher" type="button" aria-label="Abrir Club Companion">CC</button><aside class="cc-panel" hidden><header><div><small>EA FC WEB APP</small><h1>Club Companion</h1></div><button class="cc-close" type="button" aria-label="Fechar">×</button></header><nav><button data-tab="clube">Clube</button><button data-tab="sbc">SBCs</button><button data-tab="gallery">Gallery</button><button data-tab="precos">Preços</button><button data-tab="config">Config.</button></nav><p class="cc-notice" hidden></p><main class="cc-content" aria-live="polite"></main><footer>Armazenamento local · Revisar antes de ações no jogo</footer></aside>';
+  shell.innerHTML = '<button class="cc-launcher" type="button" aria-label="Abrir Club Companion">CC</button><aside class="cc-panel" hidden><header><div><small>EA FC WEB APP</small><h1>Club Companion</h1></div><button class="cc-close" type="button" aria-label="Fechar">×</button></header><nav><button data-tab="clube">Clube</button><button data-tab="analise">Análise</button><button data-tab="sbc">SBCs</button><button data-tab="gallery">Gallery</button><button data-tab="precos">Preços</button><button data-tab="links">Links</button><button data-tab="config">Config.</button></nav><p class="cc-notice" hidden></p><main class="cc-content" aria-live="polite"></main><footer>Armazenamento local · Revisar antes de ações no jogo</footer></aside>';
   shadow.append(shell);
   document.documentElement.append(host);
   const panel = shadow.querySelector('.cc-panel');
@@ -74,9 +74,32 @@
       precos: `<section class="cc-card"><h2>Pesquisar e registrar</h2><p class="cc-note">Abra a lista do provedor, procure o jogador e informe a cotação. Sem sincronização automática.</p>${current.map((player)=>`<details><summary>${escape(player.name)} · ${player.ovr}</summary><div class="cc-actions"><button data-action="price-link" data-url="https://www.futbin.com/players">FUTBIN</button><button data-action="price-link" data-url="https://www.fut.gg/players/">FUT.GG</button></div><form data-form="price" data-instance="${escape(player.instanceId)}"><label>Fonte<select name="source"><option value="futbin">FUTBIN</option><option value="fut.gg">FUT.GG</option></select></label><label>Plataforma<select name="platform"><option value="console">Console</option><option value="pc">PC</option></select></label><label>Moedas<input name="coins" type="number" min="0" step="1" required></label><button>Registrar</button></form>${state.prices.filter((price)=>price.instanceId===player.instanceId).slice(0,3).map((price)=>`<small>${price.coins.toLocaleString('pt-BR')} · ${escape(price.source)} · ${new Date(price.checkedAt).toLocaleString('pt-BR')}</small>`).join('')}</details>`).join('')||'<p class="cc-empty">Escaneie jogadores no Clube primeiro.</p>'}</section>`,
       config: `<section class="cc-card"><h2>Atalhos e automação</h2><p><kbd>Alt+C</kbd> painel · <kbd>Alt+S</kbd> ler tela · <kbd>Alt+P</kbd> alternar pulo de animação</p><button data-action="toggle-skip">Pulo automático: ${state.preferences.skipAnimations ? 'ligado' : 'desligado'}</button><p class="cc-note">Só pula controles visíveis “Pular/Continuar” após o usuário abrir o pacote. Não abre nem compra pacotes.</p><p class="cc-note">Os dados ficam em chrome.storage.local. Esta extensão altera a interface EA e pode contrariar as regras da EA.</p></section>`
     };
+    tabs.analise = `<section class="cc-card"><h2>Análise do elenco ativo</h2><p>${current.length} carta(s) em estado “clube” na base local.</p><p class="cc-note">A extensão só conhece as cartas escaneadas, importadas ou cadastradas. O escaneamento lê a página carregada; percorra as páginas ou importe CSV para ampliar a cobertura.</p></section>${current.length ? `<div class="cc-breakdown-grid">${renderBreakdown(current,'position','Grupos de posição',true)}${renderBreakdown(current,'position','Posições exatas')}${renderBreakdown(current,'league','Ligas')}${renderBreakdown(current,'club','Clubes')}${renderBreakdown(current,'rarity','Raridades')}</div>` : '<section class="cc-card"><p class="cc-empty">Ainda não há cartas locais para analisar.</p></section>'}`;
+    tabs.links = `<section class="cc-card"><h2>Projetos de referência</h2><p class="cc-note">Links externos; os códigos e automações desses projetos não são executados pelo Club Companion.</p><ul class="cc-reference-list"><li><span><b>FUTClubAnalyzer</b><small>Referência para análise de cartas por liga, clube e posição.</small></span><a href="https://github.com/jsbsantos/FUTClubAnalyzer" target="_blank" rel="noopener noreferrer">Abrir projeto</a></li><li><span><b>EasyFUT</b><small>Referência externa solicitada; sem integração de funcionalidades.</small></span><a href="https://github.com/Kava4/EasyFUT" target="_blank" rel="noopener noreferrer">Abrir projeto</a></li><li><span><b>FUT-Trader</b><small>Projeto arquivado com automação de mercado e CAPTCHA; incluído apenas como link. Nenhuma dessas automações está integrada.</small></span><a href="https://github.com/ckalgos/FUT-Trader" target="_blank" rel="noopener noreferrer">Abrir projeto</a></li></ul></section>`;
     content.innerHTML = tabs[activeTab] || tabs.clube;
     for (const button of shadow.querySelectorAll('nav button')) button.classList.toggle('active', button.dataset.tab === activeTab);
     const mode = shadow.querySelector('#cc-mode'); if (mode) { mode.addEventListener('change', () => { const traditional = mode.value === 'traditional'; shadow.querySelector('#cc-target-label').hidden = traditional; shadow.querySelector('#cc-count-label').hidden = traditional; shadow.querySelector('#cc-rating-label').hidden = !traditional; shadow.querySelector('#cc-ovr-label').hidden = !traditional; shadow.querySelector('#cc-rules-label').hidden = !traditional; }); }
+  }
+
+  function renderBreakdown(items, field, title, byPositionFamily = false) {
+    const counts = new Map();
+    for (const player of items) {
+      const raw = String(player[field] || '').trim();
+      const key = byPositionFamily ? positionFamily(raw) : raw || 'Sem informação';
+      counts.set(key, (counts.get(key) || 0) + 1);
+    }
+    const rows = [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'pt-BR'));
+    return `<section class="cc-card"><h2>${escape(title)}</h2>${rows.length ? `<ul class="cc-breakdown-list">${rows.map(([label, count]) => `<li><span>${escape(label)}</span><b>${count}</b></li>`).join('')}</ul>` : '<p class="cc-empty">Sem dados.</p>'}</section>`;
+  }
+
+  function positionFamily(position) {
+    const code = String(position || '').trim().toUpperCase().split(/[\s,/]+/)[0];
+    if (!code) return 'Sem informação';
+    if (['GL','GK'].includes(code)) return 'Goleiros';
+    if (['LE','LD','ZAG','LWB','RWB','LB','RB','CB','SW'].includes(code)) return 'Defensores';
+    if (['VOL','MC','MEI','ME','MD','CDM','CM','CAM','LM','RM','LCM','RCM','LDM','RDM','LAM','RAM'].includes(code)) return 'Meio-campistas';
+    if (['ATA','PE','PD','SA','CF','ST','LW','RW','LF','RF','LS','RS'].includes(code)) return 'Atacantes';
+    return 'Outras posições';
   }
 
   function scanVisiblePlayers() {

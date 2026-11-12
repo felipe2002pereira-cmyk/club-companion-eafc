@@ -33,6 +33,8 @@ FUTBIN e FUT.GG são abertos para pesquisa manual. As cotações são registrada
 
 A extensão é experimental e depende da estrutura visível do Web App, que pode mudar. A leitura do clube é paginada. No DME observado, os cartões candidatos não expõem IDs estáveis, então o preenchimento automático é bloqueado nessa tela. O envio final de SBC permanece manual; não há compra ou abertura automática de pacotes.
 
+A aba Análise da extensão resume os itens locais por posição, liga, clube e raridade; ela só cobre cartas escaneadas, importadas ou cadastradas. FUTClubAnalyzer é referência funcional reimplementada, enquanto EasyFUT e FUT-Trader são apenas links externos. Não importamos automações de compra, lances, relistagem ou CAPTCHA do FUT-Trader.
+
 A EA recomenda evitar extensões de terceiros e proíbe bots/automação. O uso pode contrariar as regras da EA e expor a conta a restrições. Consulte as [regras oficiais da EA](https://help.ea.com/pt-BR/articles/ea-sports-fc/fc-rules/) antes de usar a extensão.
 
 ## Atualizações do PWA

@@ -37,3 +37,11 @@
 .cc-panel kbd { padding: 2px 5px; border: 1px solid #445552; border-radius: 4px; background: #101719; }
 .cc-panel details { padding: 8px 0; border-bottom: 1px solid #314143; }
 .cc-panel summary { cursor: pointer; }
+.cc-breakdown-grid { display: grid; grid-template-columns: 1fr; gap: 1px; }
+.cc-breakdown-list { margin: 0 !important; }
+.cc-breakdown-list li { padding: 6px 0 !important; color: #c0cbc5; font-size: 11px; }
+.cc-breakdown-list li b { color: #b7f34a; }
+.cc-reference-list { margin: 0 !important; }
+.cc-reference-list li { align-items: center !important; }
+.cc-reference-list a { flex: 0 0 auto; border: 1px solid #314143; border-radius: 8px; padding: 7px 9px; color: #b7f34a; background: #202c2e; text-decoration: none; font-size: 10px; }
+.cc-reference-list a:hover { border-color: #b7f34a; }

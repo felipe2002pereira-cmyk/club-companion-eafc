@@ -1,5 +1,5 @@
 {
-  "version": "0.4.0",
+  "version": "0.5.0",
   "releasedAt": "2026-11-12",
-  "changelog": "Mapeia atletas em li.listFUTItem, com OVR, posição, nome e duplicadas; DME identificado, mas preenchimento automático bloqueado por falta de IDs estáveis nos candidatos."
+  "changelog": "Adiciona análise local do elenco por posição, liga, clube e raridade, com cobertura parcial indicada; adiciona links de referência para FUTClubAnalyzer, EasyFUT e FUT-Trader. Nenhuma automação de mercado de terceiros foi integrada."
 }

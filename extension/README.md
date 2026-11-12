@@ -13,6 +13,8 @@ Protótipo de extensão Chrome Manifest V3 para acompanhar o EA FC Ultimate Team
 
 A estrutura autenticada observada usa `main li.listFUTItem`, com OVR, posição e nome em `.entityContainer`. A lista do clube é paginada: escaneie cada página carregada e confira a contagem. Quando FUTGenie fornece um ID no DOM, ele é usado como referência; sem esse ID, a extensão cria uma chave aproximada que pode mudar com a ordenação. Liga, nação e clube não são preenchidos pela leitura atual e devem ser importados ou corrigidos manualmente.
 
+A aba **Análise** resume somente cartas locais com estado `club`, por posição, liga, clube e raridade. Campos ausentes são contados como “Sem informação”. Ela não representa automaticamente o clube inteiro: é preciso escanear as páginas do clube, importar CSV ou cadastrar cartas. A aba **Links** abre referências externas; não carrega nem executa o código delas.
+
 O planejador SBC local propõe jogadores e exclui cartas protegidas. A área DME observada não expõe IDs estáveis dos candidatos; o botão de preenchimento não clica nessa tela. O envio ao clube depende de uma ação visível selecionada e confirmação. O envio final do SBC continua manual.
 
 `Alt+C` abre/fecha o painel, `Alt+S` lê as cartas carregadas na tela e `Alt+P` alterna o pulo de animação. O pulo só clica em “Pular/Continuar” depois de você abrir um pacote; não abre nem compra pacotes.
@@ -25,6 +27,7 @@ O importador aceita CSV UTF-8 com as colunas `instanceId,itemId,name,ovr,positio
 - O script roda somente em `www.ea.com/ea-sports-fc/ultimate-team/web-app`.
 - Não acessa cookies, chamadas privadas, tráfego de rede, credenciais ou outros sites.
 - Não coleta preços automaticamente. FUTBIN/FUT.GG abrem suas listas para busca manual.
+- FUTClubAnalyzer é referência para a análise local reimplementada nesta extensão. EasyFUT e FUT-Trader aparecem somente como links. FUT-Trader está arquivado e seu bot de mercado/CAPTCHA não é integrado.
 - A EA recomenda evitar extensões de terceiros e proíbe bots/automação. A extensão altera a UI do Web App e pode contrariar as regras da EA; você escolheu seguir com esse risco.
 
 Antes de considerar o adaptador pronto, a Web App deve ser aberta e autenticada pelo próprio usuário; nunca envie senha ou código de autenticação aqui.
