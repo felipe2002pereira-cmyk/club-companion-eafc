@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#101719" />
+    <meta name="description" content="Planeje SBCs e organize sua coleção do EA SPORTS FC 27, com dados guardados no seu dispositivo." />
+    <link rel="manifest" href="app.webmanifest" />
+    <link rel="icon" href="assets/icon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="assets/app.css" />
+    <title>Club Companion</title>
+  </head>
+  <body>
+    <div id="app" class="app-shell" aria-live="polite">
+      <header class="topbar">
+        <a class="brand" href="#clube" aria-label="Club Companion, início">
+          <img src="assets/icon.svg" alt="" width="38" height="38" />
+          <span><strong>Club Companion</strong><small>Seu elenco, suas decisões</small></span>
+        </a>
+        <div id="save-status" class="save-status" role="status">Dados no dispositivo</div>
+      </header>
+      <nav class="main-nav" aria-label="Navegação principal">
+        <a href="#clube" data-view="clube" aria-current="page">Clube</a>
+        <a href="#sbcs" data-view="sbcs">SBCs</a>
+        <a href="#gallery" data-view="gallery">Gallery</a>
+        <a href="#precos" data-view="precos">Preços</a>
+        <a href="#configuracoes" data-view="configuracoes">Configurações</a>
+      </nav>
+      <main id="main-content" tabindex="-1">
+        <section class="welcome-panel">
+          <p class="eyebrow">PLANEJE COM CALMA</p>
+          <h1>Monte seu clube com mais clareza.</h1>
+          <p>Registre seu elenco, compare soluções de SBC e acompanhe sua Gallery. O companion não acessa sua conta EA nem executa ações no jogo.</p>
+          <a class="button button-primary" href="#configuracoes">Importar elenco</a>
+        </section>
+        <section class="privacy-strip" aria-label="Privacidade">
+          <span class="privacy-mark" aria-hidden="true">●</span>
+          <span>Seus dados ficam neste navegador. Faça um backup para levá-los a outro dispositivo.</span>
+        </section>
+      </main>
+      <footer class="app-footer">
+        <span>Ferramenta independente para organização pessoal.</span>
+        <span id="app-version">v0.1.0</span>
+      </footer>
+      <div id="update-prompt" class="update-prompt" hidden></div>
+    </div>
+    <script type="module" src="src/main.js"></script>
+  </body>
+</html>

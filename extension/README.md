@@ -1,0 +1,30 @@
+# Club Companion FC — extensão local
+
+Protótipo de extensão Chrome Manifest V3 para acompanhar o EA FC Ultimate Team Web App. O painel e as funções locais já existem; leitura do clube, preenchimento de SBC e ações sobre itens ainda precisam ser ajustados e conferidos com a Web App autenticada.
+
+## Instalar para uso local
+
+1. Abra `chrome://extensions`.
+2. Ative o modo do desenvolvedor.
+3. Clique em **Carregar sem compactação** e selecione esta pasta `extension`.
+4. Abra a Web App oficial e entre diretamente na EA. A extensão não pede nem guarda senha.
+
+## Estado atual do adaptador
+
+A estrutura autenticada observada usa `main li.listFUTItem`, com OVR, posição e nome em `.entityContainer`. A lista do clube é paginada: escaneie cada página carregada e confira a contagem. Quando FUTGenie fornece um ID no DOM, ele é usado como referência; sem esse ID, a extensão cria uma chave aproximada que pode mudar com a ordenação. Liga, nação e clube não são preenchidos pela leitura atual e devem ser importados ou corrigidos manualmente.
+
+O planejador SBC local propõe jogadores e exclui cartas protegidas. A área DME observada não expõe IDs estáveis dos candidatos; o botão de preenchimento não clica nessa tela. O envio ao clube depende de uma ação visível selecionada e confirmação. O envio final do SBC continua manual.
+
+`Alt+C` abre/fecha o painel, `Alt+S` lê as cartas carregadas na tela e `Alt+P` alterna o pulo de animação. O pulo só clica em “Pular/Continuar” depois de você abrir um pacote; não abre nem compra pacotes.
+
+O importador aceita CSV UTF-8 com as colunas `instanceId,itemId,name,ovr,position,league,nation,club,rarity,holographic,tradeable,duplicate,protected,status,notes`. Para pontuação manual, adicione `itemScoreOverride`; os estados aceitos são `club`, `past` e `used`.
+
+## Permissões e dados
+
+- A única permissão de extensão é `storage`.
+- O script roda somente em `www.ea.com/ea-sports-fc/ultimate-team/web-app`.
+- Não acessa cookies, chamadas privadas, tráfego de rede, credenciais ou outros sites.
+- Não coleta preços automaticamente. FUTBIN/FUT.GG abrem suas listas para busca manual.
+- A EA recomenda evitar extensões de terceiros e proíbe bots/automação. A extensão altera a UI do Web App e pode contrariar as regras da EA; você escolheu seguir com esse risco.
+
+Antes de considerar o adaptador pronto, a Web App deve ser aberta e autenticada pelo próprio usuário; nunca envie senha ou código de autenticação aqui.

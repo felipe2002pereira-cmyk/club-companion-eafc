@@ -1,0 +1,5 @@
+{
+  "version": "0.4.0",
+  "releasedAt": "2026-11-12",
+  "changelog": "Mapeia atletas em li.listFUTItem, com OVR, posição, nome e duplicadas; DME identificado, mas preenchimento automático bloqueado por falta de IDs estáveis nos candidatos."
+}

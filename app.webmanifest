@@ -1,0 +1,15 @@
+{
+  "name": "Club Companion — SBC e Gallery",
+  "short_name": "Club Companion",
+  "description": "Planejamento local de SBCs e organização da Gallery do EA SPORTS FC 27.",
+  "lang": "pt-BR",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "theme_color": "#101719",
+  "background_color": "#101719",
+  "icons": [
+    { "src": "assets/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
