@@ -113,11 +113,12 @@
 
   async function openPaletoolsGallery() {
     const paletoolsButton = findVisibleControl('Paletools');
-    if (currentMainHeading() === 'Gallery' && paletoolsButton) {
+    const paletoolsVersion = detectPaletoolsVersion();
+    if (currentMainHeading() === 'Gallery' && paletoolsVersion) {
       setNotice(`A Gallery do Paletools ${detectPaletoolsVersion() || ''} já está aberta. Use o botão de mercado do Paletools e escolha o destino no fluxo visível.`);
       return;
     }
-    if (!paletoolsButton) { setNotice('Não encontrei o controle Paletools. Carregue o Paletools oficial na Web App e tente novamente.'); return; }
+    if (!paletoolsButton || !paletoolsVersion) { setNotice('Não encontrei a versão do Paletools nesta tela. Carregue o Paletools oficial na Web App e tente novamente.'); return; }
     paletoolsButton.click();
     const openGalleryButton = await waitForVisibleElement(() => findVisibleControl('Open Gallery'), 2500);
     if (!openGalleryButton) { setNotice('O menu Paletools abriu, mas o controle “Open Gallery” não apareceu.'); return; }
@@ -129,9 +130,15 @@
   }
 
   function detectPaletoolsVersion() {
-    if (!findVisibleControl('Paletools')) return '';
-    const text = document.querySelector('main')?.innerText || '';
-    return text.match(/\bv\d+\.\d+\.\d+\b/)?.[0] || '';
+    const authorLink = [...document.querySelectorAll('main a[href*="twitter.com/paleta"]')].find((node) => visible(node) && normalizeUiText(node.innerText || node.textContent) === '@paleta');
+    const heading = [...document.querySelectorAll('main h1')].find((node) => visible(node) && ['paletools','gallery'].includes(normalizeUiText(node.innerText || node.textContent)));
+    if (!authorLink || !heading) return '';
+    const ancestors = new Set();
+    for (let node = heading; node; node = node.parentElement) ancestors.add(node);
+    let header = authorLink;
+    while (header && !ancestors.has(header)) header = header.parentElement;
+    if (!header || header.tagName !== 'MAIN' && !header.closest('main')) return '';
+    return header.innerText.match(/\bv\d+\.\d+\.\d+\b/i)?.[0] || '';
   }
 
   function currentMainHeading() {
@@ -169,21 +176,20 @@
 
   function findPaletoolsDestinationFlow() {
     if (detectPaletoolsVersion() !== 'v27.2.1') return null;
-    const controls = [...document.querySelectorAll('button,[role="button"]')].filter(visible);
+    const dialogSelector = 'dialog,[role="dialog"],[aria-modal="true"],.modal,.dialog,.popup,.swal2-popup';
+    const dialogs = [...document.querySelectorAll(dialogSelector)].filter(visible);
     const normalizedLabel = (node) => normalizeUiText(node.getAttribute('aria-label') || node.innerText || '');
     const clubLabels = new Set(['send to club','store in club','send to my club','enviar ao clube','enviar para o clube','enviar para clube']);
     const transferLabels = new Set(['send to transfer list','transfer list','enviar para a lista de transferencias','enviar para lista de transferencias','enviar a lista de transferencias']);
-    const clubButton = controls.find((node) => clubLabels.has(normalizedLabel(node)));
-    const transferButton = controls.find((node) => transferLabels.has(normalizedLabel(node)));
-    if (!clubButton || !transferButton) return null;
-    for (let scope = clubButton.parentElement; scope && scope !== document.body; scope = scope.parentElement) {
-      if (!scope.contains(transferButton)) continue;
+    for (const scope of dialogs) {
       const text = normalizeUiText(scope.innerText || '');
-      const classAndId = `${scope.className || ''} ${scope.id || ''}`;
-      const dialogLike = scope.tagName === 'DIALOG' || scope.getAttribute('role') === 'dialog' || scope.getAttribute('aria-modal') === 'true' || /modal|dialog|popup|swal/i.test(classAndId);
-      if (!dialogLike || !/(card bought|player bought|carta comprada|item comprado|jogador (foi )?comprado|atleta (foi )?comprado)/.test(text)) continue;
+      if (!/(card bought|player bought|carta comprada|item comprado|jogador (foi )?comprado|atleta (foi )?comprado)/.test(text)) continue;
+      const controls = [...scope.querySelectorAll('button,[role="button"]')].filter(visible);
+      const clubButton = controls.find((node) => clubLabels.has(normalizedLabel(node)));
+      const transferButton = controls.find((node) => transferLabels.has(normalizedLabel(node)));
+      if (!clubButton || !transferButton || clubButton.closest(dialogSelector) !== scope || transferButton.closest(dialogSelector) !== scope) continue;
       const title = [...scope.querySelectorAll('h1,h2,h3,[role="heading"]')].find(visible)?.innerText?.trim() || '';
-      return { scope, clubButton, transferButton, title, text };
+      return { scope, clubButton, transferButton, title, text, signature: scope.innerHTML };
     }
     return null;
   }
@@ -195,7 +201,7 @@
     const label = destination === 'club' ? 'Clube' : 'Lista de Transferências';
     if (!window.confirm(`Enviar ${flow.title || 'o item comprado'} para ${label}?`)) return;
     const currentFlow = findPaletoolsDestinationFlow();
-    if (!currentFlow || currentFlow.text !== flow.text) { setNotice('O diálogo mudou durante a confirmação. Nenhum destino foi escolhido; atualize a detecção.'); render(); return; }
+    if (!currentFlow || currentFlow.scope !== flow.scope || currentFlow.signature !== flow.signature || currentFlow[destination === 'club' ? 'clubButton' : 'transferButton'] !== flow[destination === 'club' ? 'clubButton' : 'transferButton']) { setNotice('O diálogo mudou durante a confirmação. Nenhum destino foi escolhido; atualize a detecção.'); render(); return; }
     const target = currentFlow[destination === 'club' ? 'clubButton' : 'transferButton'];
     if (!target || !visible(target)) { setNotice('O botão de destino escolhido não está mais visível.'); render(); return; }
     target.click();
