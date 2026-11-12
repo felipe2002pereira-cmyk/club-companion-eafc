@@ -47,4 +47,4 @@
 - [x] Add link cards for FUTClubAnalyzer, EasyFUT, and FUT-Trader, plus a statement that FUT-Trader is reference-only and its market automation/CAPTCHA solver are not included.
 - [x] Add compact styles, bump extension version/release metadata, and document partial scan coverage.
 - [x] Verify `content.js` syntax, `manifest.json` and `release.json` parse, and inspect the diff for data escaping and unchanged minimal permissions. Do not run an automated test suite.
-- [ ] Update the Obsidian project note after the work is published, recording actual validation and deliverables.
+- [x] Update the Obsidian project note after the work is published, recording actual validation and deliverables.
