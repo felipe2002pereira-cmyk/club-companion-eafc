@@ -43,6 +43,9 @@
     if (button.dataset.action === 'mark-used') { markPlanUsed(button.dataset.id); return; }
     if (button.dataset.action === 'toggle-skip') { state.preferences.skipAnimations = !state.preferences.skipAnimations; await save(); installAnimationSkip(); render(); return; }
     if (button.dataset.action === 'use-shortcut') { runShortcut(button.dataset.shortcut); return; }
+    if (button.dataset.action === 'open-paletools-gallery') { await openPaletoolsGallery(); return; }
+    if (button.dataset.action === 'refresh-paletools-destinations') { if (!findPaletoolsDestinationFlow()) setNotice('Não encontrei um diálogo de item comprado com as duas opções de destino.'); render(); return; }
+    if (button.dataset.action === 'choose-paletools-destination') { await choosePaletoolsDestination(button.dataset.destination); return; }
   });
 
   shell.addEventListener('submit', async (event) => {
@@ -62,6 +65,7 @@
     if (event.altKey && event.key.toLowerCase() === 'c') { event.preventDefault(); panel.hidden ? openPanel() : closePanel(); }
     else if (event.altKey && event.key.toLowerCase() === 's') { event.preventDefault(); const result = scanVisiblePlayers(); state.players = mergeScan(state.players, result); scanMessage = `${result.length} carta(s) detectadas; confira o resultado.`; void save().then(render); }
     else if (event.altKey && event.key.toLowerCase() === 'p') { event.preventDefault(); state.preferences.skipAnimations = !state.preferences.skipAnimations; void save().then(() => { installAnimationSkip(); if (!panel.hidden) render(); }); }
+    else if (event.altKey && event.key.toLowerCase() === 'g') { event.preventDefault(); openPanel('gallery'); void openPaletoolsGallery(); }
   }, true);
 
   function render() {
@@ -75,7 +79,12 @@
       config: `<section class="cc-card"><h2>Atalhos e automação</h2><p><kbd>Alt+C</kbd> painel · <kbd>Alt+S</kbd> ler tela · <kbd>Alt+P</kbd> alternar pulo de animação</p><button data-action="toggle-skip">Pulo automático: ${state.preferences.skipAnimations ? 'ligado' : 'desligado'}</button><p class="cc-note">Só pula controles visíveis “Pular/Continuar” após o usuário abrir o pacote. Não abre nem compra pacotes.</p><p class="cc-note">Os dados ficam em chrome.storage.local. Esta extensão altera a interface EA e pode contrariar as regras da EA.</p></section>`
     };
     tabs.analise = `<section class="cc-card"><h2>Análise do elenco ativo</h2><p>${current.length} carta(s) em estado “clube” na base local.</p><p class="cc-note">A extensão só conhece as cartas escaneadas, importadas ou cadastradas. O escaneamento lê a página carregada; percorra as páginas ou importe CSV para ampliar a cobertura.</p></section>${current.length ? `<div class="cc-breakdown-grid">${renderBreakdown(current,'position','Grupos de posição',true)}${renderBreakdown(current,'position','Posições exatas')}${renderBreakdown(current,'league','Ligas')}${renderBreakdown(current,'club','Clubes')}${renderBreakdown(current,'rarity','Raridades')}</div>` : '<section class="cc-card"><p class="cc-empty">Ainda não há cartas locais para analisar.</p></section>'}`;
+    const paletoolsVersion = detectPaletoolsVersion();
+    tabs.gallery = `<section class="cc-card"><h2>Gallery do Paletools</h2><p>${paletoolsVersion ? `${escape(paletoolsVersion)} detectado na Web App.` : 'Paletools não detectado nesta tela.'}</p><button class="cc-primary" data-action="open-paletools-gallery">Abrir Gallery do Paletools</button><p class="cc-note">Depois de uma compra iniciada por você, o Companion pode mostrar os destinos reconhecidos e enviar o item após sua confirmação. Ele não inicia compras.</p></section>` + tabs.gallery;
+    tabs.gallery = renderPaletoolsDestinationCard() + tabs.gallery;
     tabs.links = `<section class="cc-card"><h2>Projetos de referência</h2><p class="cc-note">Links externos; os códigos e automações desses projetos não são executados pelo Club Companion.</p><ul class="cc-reference-list"><li><span><b>FUTClubAnalyzer</b><small>Referência para análise de cartas por liga, clube e posição.</small></span><a href="https://github.com/jsbsantos/FUTClubAnalyzer" target="_blank" rel="noopener noreferrer">Abrir projeto</a></li><li><span><b>EasyFUT</b><small>Referência externa solicitada; sem integração de funcionalidades.</small></span><a href="https://github.com/Kava4/EasyFUT" target="_blank" rel="noopener noreferrer">Abrir projeto</a></li><li><span><b>FUT-Trader</b><small>Projeto arquivado com automação de mercado e CAPTCHA; incluído apenas como link. Nenhuma dessas automações está integrada.</small></span><a href="https://github.com/ckalgos/FUT-Trader" target="_blank" rel="noopener noreferrer">Abrir projeto</a></li></ul></section>`;
+    tabs.links = tabs.links.replace('</ul></section>', `<li><span><b>Paletools ${escape(paletoolsVersion || 'não detectado')}</b><small>Atalho para a Gallery do Paletools; instalação oficial.</small></span><a href="https://pale.tools/fifa/paletools.html" target="_blank" rel="noopener noreferrer">Abrir site</a></li></ul></section>`);
+    tabs.config += `<p class="cc-note"><kbd>Alt+G</kbd> abre a Gallery do Paletools sem iniciar compra nem mover item.</p>`;
     content.innerHTML = tabs[activeTab] || tabs.clube;
     for (const button of shadow.querySelectorAll('nav button')) button.classList.toggle('active', button.dataset.tab === activeTab);
     const mode = shadow.querySelector('#cc-mode'); if (mode) { mode.addEventListener('change', () => { const traditional = mode.value === 'traditional'; shadow.querySelector('#cc-target-label').hidden = traditional; shadow.querySelector('#cc-count-label').hidden = traditional; shadow.querySelector('#cc-rating-label').hidden = !traditional; shadow.querySelector('#cc-ovr-label').hidden = !traditional; shadow.querySelector('#cc-rules-label').hidden = !traditional; }); }
@@ -100,6 +109,102 @@
     if (['VOL','MC','MEI','ME','MD','CDM','CM','CAM','LM','RM','LCM','RCM','LDM','RDM','LAM','RAM'].includes(code)) return 'Meio-campistas';
     if (['ATA','PE','PD','SA','CF','ST','LW','RW','LF','RF','LS','RS'].includes(code)) return 'Atacantes';
     return 'Outras posições';
+  }
+
+  async function openPaletoolsGallery() {
+    const paletoolsButton = findVisibleControl('Paletools');
+    if (currentMainHeading() === 'Gallery' && paletoolsButton) {
+      setNotice(`A Gallery do Paletools ${detectPaletoolsVersion() || ''} já está aberta. Use o botão de mercado do Paletools e escolha o destino no fluxo visível.`);
+      return;
+    }
+    if (!paletoolsButton) { setNotice('Não encontrei o controle Paletools. Carregue o Paletools oficial na Web App e tente novamente.'); return; }
+    paletoolsButton.click();
+    const openGalleryButton = await waitForVisibleElement(() => findVisibleControl('Open Gallery'), 2500);
+    if (!openGalleryButton) { setNotice('O menu Paletools abriu, mas o controle “Open Gallery” não apareceu.'); return; }
+    openGalleryButton.click();
+    const heading = await waitForVisibleElement(() => [...document.querySelectorAll('main h1')].find((node) => visible(node) && node.textContent.trim() === 'Gallery'), 2500);
+    if (!heading) { setNotice('Não consegui confirmar a Gallery do Paletools. Nenhuma ação de mercado foi executada.'); return; }
+    const version = detectPaletoolsVersion();
+    setNotice(`Gallery do Paletools${version ? ` ${version}` : ''} aberta. O botão de mercado e a escolha Clube/Lista de Transferências ficam no fluxo do Paletools.`);
+  }
+
+  function detectPaletoolsVersion() {
+    if (!findVisibleControl('Paletools')) return '';
+    const text = document.querySelector('main')?.innerText || '';
+    return text.match(/\bv\d+\.\d+\.\d+\b/)?.[0] || '';
+  }
+
+  function currentMainHeading() {
+    return [...document.querySelectorAll('main h1')].find((node) => visible(node))?.textContent?.trim() || '';
+  }
+
+  function findVisibleControl(label) {
+    const expected = label.trim().toLocaleLowerCase();
+    return [...document.querySelectorAll('button,[role="button"]')].find((node) => {
+      const text = (node.getAttribute('aria-label') || node.innerText || '').replace(/\s+/g, ' ').trim().toLocaleLowerCase();
+      return visible(node) && text === expected;
+    }) || null;
+  }
+
+  function waitForVisibleElement(find, timeoutMs) {
+    const immediate = find();
+    if (immediate) return Promise.resolve(immediate);
+    return new Promise((resolve) => {
+      const observer = new MutationObserver(check);
+      const timer = window.setTimeout(() => finish(null), timeoutMs);
+      function finish(value) { observer.disconnect(); window.clearTimeout(timer); resolve(value); }
+      function check() { const found = find(); if (found) finish(found); }
+      observer.observe(document.body, { childList: true, subtree: true, attributes: true });
+      check();
+    });
+  }
+
+  function renderPaletoolsDestinationCard() {
+    const version = detectPaletoolsVersion();
+    if (version !== 'v27.2.1') return `<section class="cc-card"><h2>Destino do item comprado</h2><p class="cc-note">O seletor assistido exige Paletools v27.2.1. Versão detectada: ${escape(version || 'nenhuma')}.</p></section>`;
+    const flow = findPaletoolsDestinationFlow();
+    if (!flow) return `<section class="cc-card"><h2>Destino do item comprado</h2><p class="cc-note">Depois de iniciar uma compra no Paletools, atualize a detecção para escolher o destino no companion.</p><button data-action="refresh-paletools-destinations">Detectar opções visíveis</button></section>`;
+    return `<section class="cc-card"><h2>Destino do item comprado</h2><p>Diálogo reconhecido: ${escape(flow.title || 'item comprado')}.</p><div class="cc-actions"><button data-action="choose-paletools-destination" data-destination="club">Enviar ao Clube</button><button data-action="choose-paletools-destination" data-destination="transfer">Enviar à Lista de Transferências</button></div><p class="cc-note">Cada escolha pede confirmação e aciona somente o botão correspondente dentro do diálogo reconhecido.</p></section>`;
+  }
+
+  function findPaletoolsDestinationFlow() {
+    if (detectPaletoolsVersion() !== 'v27.2.1') return null;
+    const controls = [...document.querySelectorAll('button,[role="button"]')].filter(visible);
+    const normalizedLabel = (node) => normalizeUiText(node.getAttribute('aria-label') || node.innerText || '');
+    const clubLabels = new Set(['send to club','store in club','send to my club','enviar ao clube','enviar para o clube','enviar para clube']);
+    const transferLabels = new Set(['send to transfer list','transfer list','enviar para a lista de transferencias','enviar para lista de transferencias','enviar a lista de transferencias']);
+    const clubButton = controls.find((node) => clubLabels.has(normalizedLabel(node)));
+    const transferButton = controls.find((node) => transferLabels.has(normalizedLabel(node)));
+    if (!clubButton || !transferButton) return null;
+    for (let scope = clubButton.parentElement; scope && scope !== document.body; scope = scope.parentElement) {
+      if (!scope.contains(transferButton)) continue;
+      const text = normalizeUiText(scope.innerText || '');
+      const classAndId = `${scope.className || ''} ${scope.id || ''}`;
+      const dialogLike = scope.tagName === 'DIALOG' || scope.getAttribute('role') === 'dialog' || scope.getAttribute('aria-modal') === 'true' || /modal|dialog|popup|swal/i.test(classAndId);
+      if (!dialogLike || !/(card bought|player bought|carta comprada|item comprado|jogador (foi )?comprado|atleta (foi )?comprado)/.test(text)) continue;
+      const title = [...scope.querySelectorAll('h1,h2,h3,[role="heading"]')].find(visible)?.innerText?.trim() || '';
+      return { scope, clubButton, transferButton, title, text };
+    }
+    return null;
+  }
+
+  async function choosePaletoolsDestination(destination) {
+    if (!['club','transfer'].includes(destination)) return;
+    const flow = findPaletoolsDestinationFlow();
+    if (!flow) { setNotice('O diálogo de destino não está mais disponível. Atualize a detecção antes de escolher.'); render(); return; }
+    const label = destination === 'club' ? 'Clube' : 'Lista de Transferências';
+    if (!window.confirm(`Enviar ${flow.title || 'o item comprado'} para ${label}?`)) return;
+    const currentFlow = findPaletoolsDestinationFlow();
+    if (!currentFlow || currentFlow.text !== flow.text) { setNotice('O diálogo mudou durante a confirmação. Nenhum destino foi escolhido; atualize a detecção.'); render(); return; }
+    const target = currentFlow[destination === 'club' ? 'clubButton' : 'transferButton'];
+    if (!target || !visible(target)) { setNotice('O botão de destino escolhido não está mais visível.'); render(); return; }
+    target.click();
+    setNotice(`Clique enviado para ${label}. Confira na Web App se o item chegou ao destino.`);
+    render();
+  }
+
+  function normalizeUiText(value) {
+    return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim().toLowerCase();
   }
 
   function scanVisiblePlayers() {
