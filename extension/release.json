@@ -1,5 +1,5 @@
 {
-  "version": "0.6.0",
+  "version": "0.6.3",
   "releasedAt": "2026-11-12",
-  "changelog": "Adiciona atalho Alt+G, botão para abrir a Gallery do Paletools e detecção do destino pós-compra na versão exata v27.2.1. O Companion não compra; só move o item para Clube/Lista de Transferências após escolha e confirmação. Mantém análise local e links de referência."
+  "changelog": "Corrige a regra de acesso à folha de estilos no manifesto para permitir o carregamento da extensão no Chrome."
 }

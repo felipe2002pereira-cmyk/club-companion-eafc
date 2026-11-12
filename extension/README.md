@@ -4,12 +4,12 @@ Protótipo de extensão Chrome Manifest V3 para acompanhar o EA FC Ultimate Team
 
 ## Instalar no Chrome
 
-1. Baixe `dist/Club-Companion-FC-v0.6.2-chrome.zip` no repositório e extraia o arquivo.
+1. Baixe `dist/Club-Companion-FC-v0.6.3-chrome.zip` no repositório e extraia o arquivo.
 2. Abra `chrome://extensions` e ative o **Modo do desenvolvedor**.
 3. Clique em **Carregar sem compactação** e selecione a pasta extraída que contém `manifest.json`.
 4. Abra a Web App oficial e entre diretamente na EA. A extensão não pede nem guarda senha.
 
-O Chrome não instala uma extensão local diretamente do ZIP: extraia-o e carregue a pasta pelo modo do desenvolvedor. Para atualizar, extraia a nova versão em outra pasta, remova a versão antiga em `chrome://extensions` e carregue a nova pasta.
+O Chrome carrega a pasta extraída pelo modo do desenvolvedor. Se uma versão anterior já estiver instalada, substitua os arquivos na mesma pasta e clique em **Recarregar** em `chrome://extensions` para preservar os dados locais. Depois, recarregue a aba da Web App.
 
 ## Estado atual do adaptador
 

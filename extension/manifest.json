@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Club Companion FC",
-  "version": "0.6.2",
+  "version": "0.6.3",
   "description": "Planejador local para o EA SPORTS FC Ultimate Team Web App.",
   "permissions": ["storage"],
   "content_scripts": [
@@ -17,7 +17,7 @@
   "web_accessible_resources": [
     {
       "resources": ["content.css"],
-      "matches": ["https://www.ea.com/ea-sports-fc/ultimate-team/web-app/*"]
+      "matches": ["https://www.ea.com/*"]
     }
   ]
 }
