@@ -2,7 +2,7 @@
   if (window.__clubCompanionFcLoaded || !document.body) return;
   window.__clubCompanionFcLoaded = true;
 
-  const DEFAULTS = { players: [], events: [], plans: [], prices: [], sets: [], preferences: { enabled: true, skipAnimations: false } };
+  const DEFAULTS = { players: [], events: [], plans: [], prices: [], priceAlerts: [], sets: [], preferences: { enabled: true, skipAnimations: false } };
   const host = document.createElement('div');
   host.id = 'club-companion-fc-root';
   const shadow = host.attachShadow({ mode: 'open' });
@@ -20,9 +20,14 @@
   let activeTab = 'clube';
   let scanMessage = 'Ainda não escaneado.';
 
-  chrome.storage.local.get(DEFAULTS, (saved) => { state = { ...structuredClone(DEFAULTS), ...saved, preferences: { ...DEFAULTS.preferences, ...(saved.preferences || {}) } }; render(); installAnimationSkip(); });
+  chrome.storage.local.get(DEFAULTS, (saved) => { state = { ...structuredClone(DEFAULTS), ...saved, preferences: { ...DEFAULTS.preferences, ...(saved.preferences || {}) } }; state.priceAlerts = Array.isArray(state.priceAlerts) ? state.priceAlerts.filter(isValidPriceAlert) : []; render(); installAnimationSkip(); });
 
-  function save() { return new Promise((resolve) => chrome.storage.local.set(state, resolve)); }
+  function save() {
+    return new Promise((resolve) => chrome.storage.local.set(state, () => {
+      if (chrome.runtime.lastError) { setNotice('Não foi possível salvar no armazenamento local do Chrome. Tente novamente.'); resolve(false); return; }
+      resolve(true);
+    }));
+  }
   function openPanel(tab = activeTab) { activeTab = tab; panel.hidden = false; render(); }
   function closePanel() { panel.hidden = true; }
 
@@ -38,6 +43,7 @@
     if (button.dataset.action === 'protect') { toggleProtected(button.dataset.id); return; }
     if (button.dataset.action === 'send-club') { sendSelectedToClub(); return; }
     if (button.dataset.action === 'price-link') { window.open(button.dataset.url, '_blank', 'noopener,noreferrer'); return; }
+    if (button.dataset.action === 'clear-price-alert') { const previous = state.priceAlerts; state.priceAlerts = state.priceAlerts.filter((alert) => !(alert.instanceId === button.dataset.instance && alert.source === button.dataset.source && alert.platform === button.dataset.platform)); if (!await save()) { state.priceAlerts = previous; return; } setNotice('Alerta de preço removido.'); render(); return; }
     if (button.dataset.action === 'add-set') { addGallerySet(); return; }
     if (button.dataset.action === 'gallery-add') { addToGallery(button.dataset.set, button.dataset.player); return; }
     if (button.dataset.action === 'mark-used') { markPlanUsed(button.dataset.id); return; }
@@ -50,11 +56,47 @@
 
   shell.addEventListener('submit', async (event) => {
     const form = event.target;
-    if (form.matches('[data-form="price"]')) { event.preventDefault(); const data = new FormData(form); state.prices.unshift({ id: id(), instanceId: form.dataset.instance, source: data.get('source'), platform: data.get('platform'), coins: Number(data.get('coins')), checkedAt: new Date().toISOString() }); await save(); render(); }
+    if (form.matches('[data-form="price"]')) {
+      event.preventDefault();
+      const data = new FormData(form);
+      const instanceId = form.dataset.instance;
+      const source = String(data.get('source') || '');
+      const platform = String(data.get('platform') || '');
+      if (!['futbin','fut.gg'].includes(source) || !['console','pc'].includes(platform)) { setNotice('Confira a fonte e a plataforma.'); return; }
+      const intent = event.submitter?.value || 'quote';
+      const player = state.players.find((item) => item.instanceId === instanceId);
+      if (!player) { setNotice('Carta não encontrada no elenco local.'); return; }
+      if (intent === 'alert') {
+        const rawTarget = String(data.get('targetCoins') || '').trim();
+        const targetCoins = Number(rawTarget);
+        if (!rawTarget || !Number.isSafeInteger(targetCoins) || targetCoins < 0) { setNotice('Informe um alvo inteiro e não negativo em moedas.'); return; }
+        const alert = { instanceId, source, platform, targetCoins };
+        const previous = state.priceAlerts;
+        state.priceAlerts = state.priceAlerts.filter((item) => !(item.instanceId === instanceId && item.source === source && item.platform === platform));
+        state.priceAlerts.push(alert);
+        if (!await save()) { state.priceAlerts = previous; return; }
+        setNotice(`Alvo salvo para ${player.name}: ${targetCoins.toLocaleString('pt-BR')} moedas.`); render(); return;
+      }
+      const rawCoins = String(data.get('coins') || '').trim();
+      const coins = Number(rawCoins);
+      if (!rawCoins || !Number.isSafeInteger(coins) || coins < 0) { setNotice('Informe uma cotação inteira e não negativa em moedas.'); return; }
+      const previousPrices = state.prices;
+      state.prices = [{ id: id(), instanceId, source, platform, coins, checkedAt: new Date().toISOString() }, ...state.prices];
+      const target = state.priceAlerts.find((item) => item.instanceId === instanceId && item.source === source && item.platform === platform);
+      const reached = target && coins <= target.targetCoins;
+      if (!await save()) { state.prices = previousPrices; return; }
+      setNotice(reached ? `Alerta: ${player.name} está em ${coins.toLocaleString('pt-BR')} moedas (${source.toUpperCase()} · ${platform === 'pc' ? 'PC' : 'Console'}), no alvo de ${target.targetCoins.toLocaleString('pt-BR')}. Confira manualmente.` : `Cotação manual de ${player.name} registrada. Não houve alerta para esse alvo.`);
+      render();
+    }
     if (form.matches('[data-form="player"]')) { event.preventDefault(); const data = new FormData(form); const player={instanceId:`manual:${id()}`,itemId:String(data.get('itemId')).trim()||`manual-${id()}`,name:String(data.get('name')).trim(),ovr:Number(data.get('ovr')),position:String(data.get('position')).trim(),league:String(data.get('league')).trim(),nation:String(data.get('nation')).trim(),club:String(data.get('club')).trim(),rarity:String(data.get('rarity')).trim(),holographic:data.has('holographic'),tradeable:false,duplicate:data.has('duplicate'),protected:data.has('protected'),status:'club',scoreOverride:parseScoreOverride(data.get('scoreOverride'))}; if(!player.name||!Number.isInteger(player.ovr)||player.ovr<45||player.ovr>99){setNotice('Informe nome e OVR entre 45 e 99.');return;} state.players.unshift(player);await save();render(); }
   });
 
   shell.addEventListener('change', async (event) => {
+    const priceForm = event.target.closest('[data-form="price"]');
+    if (priceForm && ['source','platform'].includes(event.target.name)) {
+      const alert = state.priceAlerts.find((item) => item.instanceId === priceForm.dataset.instance && item.source === priceForm.elements.source.value && item.platform === priceForm.elements.platform.value);
+      priceForm.elements.targetCoins.value = alert ? String(alert.targetCoins) : '';
+    }
     const input=event.target.closest('#cc-csv');if(!input||!input.files?.[0])return;
     try { const rows=parseCsv(await input.files[0].text());const headers=rows.shift().map((value)=>value.trim());const required=['instanceId','itemId','name','ovr','position','league','nation','club','rarity','holographic','tradeable','duplicate','protected','status','notes'];const missing=required.filter((key)=>!headers.includes(key));if(missing.length)throw new Error(`Faltam colunas: ${missing.join(', ')}.`);const index=new Map(headers.map((header,position)=>[header,position]));const known=new Set(state.players.map((player)=>player.instanceId));const additions=[];for(const row of rows){if(!row.some((value)=>value.trim()))continue;const get=(key)=>row[index.get(key)]??'';const instanceId=get('instanceId').trim();const name=get('name').trim();const ovr=Number(get('ovr'));if(!instanceId||!name||!Number.isInteger(ovr)||ovr<45||ovr>99)throw new Error(`Linha inválida: ${name||instanceId||'sem identificador'}.`);if(known.has(instanceId))continue;known.add(instanceId);additions.push({instanceId,itemId:get('itemId').trim()||instanceId,name,ovr,position:get('position'),league:get('league'),nation:get('nation'),club:get('club'),rarity:get('rarity'),holographic:truthy(get('holographic')),tradeable:truthy(get('tradeable')),duplicate:truthy(get('duplicate')),protected:truthy(get('protected')),status:['club','past','used'].includes(get('status'))?get('status'):'club',scoreOverride:parseScoreOverride(get('itemScoreOverride')||get('scoreOverride')),scannedAt:new Date().toISOString()});}state.players.push(...additions);await save();scanMessage=`${additions.length} carta(s) importadas do CSV.`;render();} catch(error) { setNotice(error.message); }
   });
@@ -75,7 +117,7 @@
       clube: `<section class="cc-card"><h2>Clube visível</h2><p>${escape(scanMessage)}</p><button class="cc-primary" data-action="scan">Ler cartas desta tela</button><label>Importar elenco CSV<input id="cc-csv" type="file" accept="text/csv,.csv"></label><p class="cc-note">A Web App só mostra os itens carregados na página. Para o elenco completo, importe CSV ou percorra as telas e confira a contagem.</p><div class="cc-stats"><b>${current.length}</b><span>cartas guardadas</span><b>${protectedCount}</b><span>protegidas</span></div></section><section class="cc-card"><h2>Adicionar manualmente</h2><form data-form="player"><label>Nome<input name="name" required maxlength="80"></label><div class="cc-grid"><label>OVR<input name="ovr" type="number" min="45" max="99" required></label><label>Item ID<input name="itemId" maxlength="60"></label></div><div class="cc-grid"><label>Posição<input name="position" maxlength="20"></label><label>Raridade<input name="rarity" maxlength="60"></label></div><label>Liga<input name="league" maxlength="60"></label><label>Nação<input name="nation" maxlength="60"></label><label>Clube<input name="club" maxlength="60"></label><label>Item Score final<input name="scoreOverride" type="number" min="0" step="1"></label><label class="cc-check"><input name="holographic" type="checkbox"> Carta especial/holográfica</label><label class="cc-check"><input name="duplicate" type="checkbox"> Duplicada</label><label class="cc-check"><input name="protected" type="checkbox"> Protegida</label><button class="cc-primary">Salvar carta local</button></form></section><section class="cc-card"><h2>Cartas locais</h2>${current.length ? `<ul>${current.slice(0,80).map(playerRow).join('')}</ul>` : '<p class="cc-empty">Escaneie a tela do clube para começar.</p>'}</section><section class="cc-card"><h2>Ações na tela</h2><button data-action="send-club">Enviar item selecionado ao clube</button><p class="cc-note">Só atua em cartas selecionadas visíveis e pede confirmação. A EA pode mudar o texto do botão.</p></section>`,
       sbc: `<section class="cc-card"><h2>Planejar SBC</h2><label>Modo<select id="cc-mode"><option value="item-score">Item Score</option><option value="traditional">Tradicional · 11 jogadores</option></select></label><label id="cc-target-label">Score mínimo<input id="cc-target" type="number" min="1" value="100000"></label><label id="cc-count-label">Quantidade opcional<input id="cc-count" type="number" min="1" max="99" placeholder="Auto"></label><label id="cc-rating-label" hidden>Rating mínimo<input id="cc-rating" type="number" min="1" max="99"></label><label id="cc-ovr-label" hidden>OVR mínimo individual<input id="cc-ovr" type="number" min="1" max="99"></label><label id="cc-rules-label" hidden>Limites por atributo (JSON)<textarea id="cc-rules" rows="4" placeholder='[{"field":"league","value":"Premier League","minimum":3,"maximum":11}]'></textarea></label><button class="cc-primary" data-action="solve">Encontrar escalação</button><div id="cc-sbc-result"></div><p class="cc-note">Sem química. Rating tradicional é estimativa. Cartas protegidas ficam fora.</p></section><section class="cc-card"><h2>Planos salvos</h2>${state.plans.length ? `<ul>${state.plans.slice(0,10).map((plan)=>`<li>${escape(plan.summary)}<small>${new Date(plan.createdAt).toLocaleString('pt-BR')}</small>${plan.status!=='used'?`<button data-action="mark-used" data-id="${escape(plan.id)}">Registrar como usado</button>`:'<small>Registrado como usado</small>'}</li>`).join('')}</ul>` : '<p class="cc-empty">Nenhum plano salvo.</p>'}</section>`,
       gallery: `<section class="cc-card"><h2>Novo Gallery Set</h2><label>Nome<input id="cc-set-name" maxlength="80"></label><label>Limites D,C,B,A,S<input id="cc-set-thresholds" placeholder="50000,80000,120000"></label><button data-action="add-set">Salvar Set</button></section>${state.sets.length ? state.sets.map(renderGallerySet).join('') : '<p class="cc-empty">Sets e histórico são locais.</p>'}`,
-      precos: `<section class="cc-card"><h2>Pesquisar e registrar</h2><p class="cc-note">Abra a lista do provedor, procure o jogador e informe a cotação. Sem sincronização automática.</p>${current.map((player)=>`<details><summary>${escape(player.name)} · ${player.ovr}</summary><div class="cc-actions"><button data-action="price-link" data-url="https://www.futbin.com/players">FUTBIN</button><button data-action="price-link" data-url="https://www.fut.gg/players/">FUT.GG</button></div><form data-form="price" data-instance="${escape(player.instanceId)}"><label>Fonte<select name="source"><option value="futbin">FUTBIN</option><option value="fut.gg">FUT.GG</option></select></label><label>Plataforma<select name="platform"><option value="console">Console</option><option value="pc">PC</option></select></label><label>Moedas<input name="coins" type="number" min="0" step="1" required></label><button>Registrar</button></form>${state.prices.filter((price)=>price.instanceId===player.instanceId).slice(0,3).map((price)=>`<small>${price.coins.toLocaleString('pt-BR')} · ${escape(price.source)} · ${new Date(price.checkedAt).toLocaleString('pt-BR')}</small>`).join('')}</details>`).join('')||'<p class="cc-empty">Escaneie jogadores no Clube primeiro.</p>'}</section>`,
+      precos: `<section class="cc-card"><h2>Pesquisar e registrar</h2><p class="cc-note">Abra FUTBIN/FUT.GG, confira o preço e registre a cotação manualmente. O alerta só é verificado quando você registra uma nova cotação; não é preço em tempo real.</p>${current.map(renderPriceCard).join('')||'<p class="cc-empty">Escaneie jogadores no Clube primeiro.</p>'}</section>`,
       config: `<section class="cc-card"><h2>Atalhos e automação</h2><p><kbd>Alt+C</kbd> painel · <kbd>Alt+S</kbd> ler tela · <kbd>Alt+P</kbd> alternar pulo de animação</p><button data-action="toggle-skip">Pulo automático: ${state.preferences.skipAnimations ? 'ligado' : 'desligado'}</button><p class="cc-note">Só pula controles visíveis “Pular/Continuar” após o usuário abrir o pacote. Não abre nem compra pacotes.</p><p class="cc-note">Os dados ficam em chrome.storage.local. Esta extensão altera a interface EA e pode contrariar as regras da EA.</p></section>`
     };
     tabs.analise = `<section class="cc-card"><h2>Análise do elenco ativo</h2><p>${current.length} carta(s) em estado “clube” na base local.</p><p class="cc-note">A extensão só conhece as cartas escaneadas, importadas ou cadastradas. O escaneamento lê a página carregada; percorra as páginas ou importe CSV para ampliar a cobertura.</p></section>${current.length ? `<div class="cc-breakdown-grid">${renderBreakdown(current,'position','Grupos de posição',true)}${renderBreakdown(current,'position','Posições exatas')}${renderBreakdown(current,'league','Ligas')}${renderBreakdown(current,'club','Clubes')}${renderBreakdown(current,'rarity','Raridades')}</div>` : '<section class="cc-card"><p class="cc-empty">Ainda não há cartas locais para analisar.</p></section>'}`;
@@ -88,6 +130,19 @@
     content.innerHTML = tabs[activeTab] || tabs.clube;
     for (const button of shadow.querySelectorAll('nav button')) button.classList.toggle('active', button.dataset.tab === activeTab);
     const mode = shadow.querySelector('#cc-mode'); if (mode) { mode.addEventListener('change', () => { const traditional = mode.value === 'traditional'; shadow.querySelector('#cc-target-label').hidden = traditional; shadow.querySelector('#cc-count-label').hidden = traditional; shadow.querySelector('#cc-rating-label').hidden = !traditional; shadow.querySelector('#cc-ovr-label').hidden = !traditional; shadow.querySelector('#cc-rules-label').hidden = !traditional; }); }
+  }
+
+  function renderPriceCard(player) {
+    const alerts = state.priceAlerts.filter((alert) => alert.instanceId === player.instanceId);
+    const selectedAlert = alerts[0];
+    const source = selectedAlert?.source || 'futbin';
+    const platform = selectedAlert?.platform || 'console';
+    const quotes = state.prices.filter((price) => price.instanceId === player.instanceId).slice(0, 3);
+    return `<details><summary>${escape(player.name)} · ${player.ovr}</summary><div class="cc-actions"><button data-action="price-link" data-url="https://www.futbin.com/players">FUTBIN</button><button data-action="price-link" data-url="https://www.fut.gg/players/">FUT.GG</button></div><form data-form="price" data-instance="${escape(player.instanceId)}"><label>Fonte<select name="source"><option value="futbin" ${source === 'futbin' ? 'selected' : ''}>FUTBIN</option><option value="fut.gg" ${source === 'fut.gg' ? 'selected' : ''}>FUT.GG</option></select></label><label>Plataforma<select name="platform"><option value="console" ${platform === 'console' ? 'selected' : ''}>Console</option><option value="pc" ${platform === 'pc' ? 'selected' : ''}>PC</option></select></label><label>Cotação em moedas<input name="coins" type="number" min="0" step="1" placeholder="Preço conferido manualmente"></label><label>Alvo em moedas<input name="targetCoins" type="number" min="0" step="1" value="${selectedAlert ? selectedAlert.targetCoins : ''}" placeholder="Avisar quando chegar aqui"></label><div class="cc-actions"><button type="submit" name="intent" value="quote">Registrar cotação</button><button type="submit" name="intent" value="alert">Salvar alvo</button></div></form>${alerts.length ? `<div class="cc-price-alerts"><b>Alertas configurados</b>${alerts.map((alert) => `<div class="cc-price-alert-row"><small>${escape(alert.source.toUpperCase())} · ${alert.platform === 'pc' ? 'PC' : 'Console'} · até ${alert.targetCoins.toLocaleString('pt-BR')} moedas</small><button type="button" data-action="clear-price-alert" data-instance="${escape(alert.instanceId)}" data-source="${escape(alert.source)}" data-platform="${escape(alert.platform)}">Remover</button></div>`).join('')}</div>` : ''}${quotes.map((price) => `<small>${price.coins.toLocaleString('pt-BR')} · ${escape(price.source)} · ${new Date(price.checkedAt).toLocaleString('pt-BR')}</small>`).join('')}</details>`;
+  }
+
+  function isValidPriceAlert(alert) {
+    return Boolean(alert && typeof alert.instanceId === 'string' && alert.instanceId && ['futbin','fut.gg'].includes(alert.source) && ['console','pc'].includes(alert.platform) && Number.isSafeInteger(alert.targetCoins) && alert.targetCoins >= 0);
   }
 
   function renderBreakdown(items, field, title, byPositionFamily = false) {

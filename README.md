@@ -6,7 +6,7 @@ Ferramentas locais para organizar cartas do Ultimate Team e planejar SBCs: um co
 
 - **PWA na raiz:** cadastro/importação de elenco, proteção de cartas, planos de SBC tradicional e Item Score, Gallery Sets, histórico e cotações manuais. Não se conecta à conta EA.
 - **Extensão em `extension/`:** painel Manifest V3, leitura das cartas visíveis, atalhos e ações opcionais na interface da Web App. Consulte [`extension/README.md`](extension/README.md) para instalar e conhecer os limites.
-- **Pacote Chrome:** [baixar Club Companion FC v0.6.1](dist/Club-Companion-FC-v0.6.1-chrome.zip). Extraia o ZIP e carregue a pasta com `manifest.json` em `chrome://extensions` no modo do desenvolvedor.
+- **Pacote Chrome:** [baixar Club Companion FC v0.6.2](dist/Club-Companion-FC-v0.6.2-chrome.zip). Extraia o ZIP e carregue a pasta com `manifest.json` em `chrome://extensions` no modo do desenvolvedor.
 - **Documentação em `docs/`:** decisões de produto e plano de implementação.
 
 ## Executar o PWA
@@ -28,7 +28,7 @@ O CSV aceita uma linha por cópia física. `instanceId` identifica a cópia; `it
 
 ## Mercado e Gallery
 
-FUTBIN e FUT.GG são abertos para pesquisa manual. As cotações são registradas pelo usuário; não há feed em tempo real nem scraping. Gallery Sets e histórico também são locais.
+FUTBIN e FUT.GG são abertos para pesquisa manual. As cotações são registradas pelo usuário; não há feed em tempo real nem scraping. Na extensão, alvos de preço locais podem gerar um aviso quando uma nova cotação manual os atinge. Gallery Sets e histórico também são locais.
 
 ## Limites da extensão
 

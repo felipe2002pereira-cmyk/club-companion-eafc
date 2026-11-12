@@ -37,6 +37,10 @@
 .cc-panel kbd { padding: 2px 5px; border: 1px solid #445552; border-radius: 4px; background: #101719; }
 .cc-panel details { padding: 8px 0; border-bottom: 1px solid #314143; }
 .cc-panel summary { cursor: pointer; }
+.cc-price-alerts { display: grid; gap: 5px; margin: 8px 0; padding: 9px; border: 1px solid #445552; border-radius: 8px; background: #101719; }
+.cc-price-alert-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.cc-price-alert-row small { color: #b7f34a !important; }
+.cc-price-alert-row button { flex: 0 0 auto; }
 .cc-breakdown-grid { display: grid; grid-template-columns: 1fr; gap: 1px; }
 .cc-breakdown-list { margin: 0 !important; }
 .cc-breakdown-list li { padding: 6px 0 !important; color: #c0cbc5; font-size: 11px; }
