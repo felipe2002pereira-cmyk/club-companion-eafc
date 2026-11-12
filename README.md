@@ -6,7 +6,7 @@ Ferramentas locais para organizar cartas do Ultimate Team e planejar SBCs: um co
 
 - **PWA na raiz:** cadastro/importação de elenco, proteção de cartas, planos de SBC tradicional e Item Score, Gallery Sets, histórico e cotações manuais. Não se conecta à conta EA.
 - **Extensão em `extension/`:** painel Manifest V3, leitura das cartas visíveis, atalhos e ações opcionais na interface da Web App. Consulte [`extension/README.md`](extension/README.md) para instalar e conhecer os limites.
-- **Pacote Chrome:** [baixar Club Companion FC v0.6.3](dist/Club-Companion-FC-v0.6.3-chrome.zip). Extraia o ZIP e carregue a pasta com `manifest.json` em `chrome://extensions` no modo do desenvolvedor.
+- **Instalação no Chrome pausada:** o Microsoft Defender sinalizou `content.js` como `Trojan:Script/Ulthar.A!ml`. Os pacotes 0.6.2 e 0.6.3 continham o mesmo script e foram retirados da branch principal. A classificação ainda precisa de análise.
 - **Documentação em `docs/`:** decisões de produto e plano de implementação.
 
 ## Executar o PWA
