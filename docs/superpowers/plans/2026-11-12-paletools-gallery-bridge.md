@@ -46,5 +46,5 @@
 - [x] Add `Alt+G`, a Gallery-tab launcher, and a Links entry for the official Paletools page/version.
 - [x] Implement exact-label visible-control lookup, detect the current Gallery, and wait up to 2.5 seconds for `Open Gallery`.
 - [x] Offer Club/Transfer List destinations only for a matching visible bought-item dialog containing both options; re-find the chosen control after the user's confirmation, then click only that destination.
-- [ ] Bump extension version/release metadata and document the integration boundary.
-- [ ] Run syntax/JSON/diff checks only, inspect unchanged host permissions, update the Obsidian project note, commit and push to the already authorized public repository.
+- [x] Bump extension version/release metadata and document the integration boundary.
+- [x] Run syntax/JSON/diff checks only, inspect unchanged host permissions, update the Obsidian project note, commit and push to the already authorized public repository.
