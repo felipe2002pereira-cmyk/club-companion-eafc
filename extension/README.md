@@ -4,7 +4,7 @@ Protótipo de extensão Chrome Manifest V3 para acompanhar o EA FC Ultimate Team
 
 ## Instalar no Chrome
 
-1. Baixe `dist/Club-Companion-FC-v0.6.1-chrome.zip` no repositório e extraia o arquivo.
+1. Baixe `dist/Club-Companion-FC-v0.6.2-chrome.zip` no repositório e extraia o arquivo.
 2. Abra `chrome://extensions` e ative o **Modo do desenvolvedor**.
 3. Clique em **Carregar sem compactação** e selecione a pasta extraída que contém `manifest.json`.
 4. Abra a Web App oficial e entre diretamente na EA. A extensão não pede nem guarda senha.
@@ -28,7 +28,7 @@ O importador aceita CSV UTF-8 com as colunas `instanceId,itemId,name,ovr,positio
 - A única permissão de extensão é `storage`.
 - O script roda somente em `www.ea.com/ea-sports-fc/ultimate-team/web-app`.
 - Não acessa cookies, chamadas privadas, tráfego de rede, credenciais ou outros sites.
-- Não coleta preços automaticamente. FUTBIN/FUT.GG abrem suas listas para busca manual.
+- Não coleta preços automaticamente. FUTBIN/FUT.GG abrem suas listas para busca manual. Você pode salvar alvos por carta, fonte e plataforma; o aviso só aparece quando registra manualmente uma cotação igual ou abaixo do alvo. Não há preço em tempo real nem ação automática no mercado.
 - Paletools é aberto pela UI visível usando o controle `Paletools` e a ação `Open Gallery`. A extensão não instala nem atualiza o script; use a [página oficial do Paletools](https://pale.tools/fifa/paletools.html). A integração depende dos rótulos visíveis e pode exigir ajuste após atualizações.
 - FUTClubAnalyzer é referência para a análise local reimplementada nesta extensão. EasyFUT e FUT-Trader aparecem somente como links. FUT-Trader está arquivado e seu bot de mercado/CAPTCHA não é integrado.
 - A EA recomenda evitar extensões de terceiros e proíbe bots/automação. A extensão altera a UI do Web App e pode contrariar as regras da EA; você escolheu seguir com esse risco.
