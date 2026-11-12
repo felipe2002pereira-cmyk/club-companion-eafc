@@ -1,6 +1,6 @@
 const DATABASE_NAME = 'club-companion';
-const DATABASE_VERSION = 1;
-const STORE_NAMES = ['playerItems', 'events', 'sbcPlans', 'gallerySets', 'priceSnapshots'];
+const DATABASE_VERSION = 2;
+const STORE_NAMES = ['playerItems', 'events', 'sbcPlans', 'gallerySets', 'priceSnapshots', 'priceTargets'];
 
 let databasePromise;
 
@@ -25,6 +25,7 @@ export function openDatabase() {
       }
       if (!db.objectStoreNames.contains('sbcPlans')) db.createObjectStore('sbcPlans', { keyPath: 'id' });
       if (!db.objectStoreNames.contains('gallerySets')) db.createObjectStore('gallerySets', { keyPath: 'id' });
+      if (!db.objectStoreNames.contains('priceTargets')) db.createObjectStore('priceTargets', { keyPath: 'id' });
       if (!db.objectStoreNames.contains('priceSnapshots')) {
         const store = db.createObjectStore('priceSnapshots', { keyPath: 'id' });
         store.createIndex('instanceId', 'instanceId', { unique: false });
@@ -70,6 +71,50 @@ export async function writeOne(storeName, value) {
     transaction.oncomplete = () => resolve();
     transaction.onerror = () => reject(transaction.error || new Error(`Falha ao salvar em ${storeName}.`));
     transaction.onabort = () => reject(transaction.error || new Error(`A gravação em ${storeName} foi cancelada.`));
+  });
+}
+
+export async function deleteOne(storeName, id) {
+  assertStore(storeName);
+  const db = await openDatabase();
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(storeName, 'readwrite');
+    transaction.objectStore(storeName).delete(id);
+    transaction.oncomplete = () => resolve();
+    transaction.onabort = () => reject(transaction.error || new Error('Não foi possível remover o registro.'));
+  });
+}
+
+export async function importObservedPlayers(players) {
+  const db = await openDatabase();
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(['playerItems', 'events'], 'readwrite');
+    const store = transaction.objectStore('playerItems');
+    const events = transaction.objectStore('events');
+    let added = 0;
+    for (const player of players) {
+      const lookup = store.get(player.instanceId);
+      lookup.onsuccess = () => {
+        const existing = lookup.result;
+        if (existing) {
+          if (player.duplicate && !existing.duplicate && existing.status === 'club') {
+            store.put({ ...existing, duplicate: true });
+          }
+          return;
+        }
+        store.add(player);
+        events.add({
+          id: crypto.randomUUID(),
+          instanceId: player.instanceId,
+          type: 'importado',
+          details: 'Carta visível na Web App',
+          occurredAt: new Date().toISOString(),
+        });
+        added += 1;
+      };
+    }
+    transaction.oncomplete = () => resolve(added);
+    transaction.onabort = () => reject(transaction.error || new Error('Não foi possível importar as cartas.'));
   });
 }
 

@@ -8,6 +8,7 @@ export async function renderClubView(container) {
   container.innerHTML = `
     <div class="page-heading"><div><p class="eyebrow">SEU ELENCO</p><h1>Clube</h1><p>Registre cartas manualmente. Cada cópia tem seu próprio histórico.</p></div><a class="button button-quiet" href="#configuracoes">Importar ou exportar</a></div>
     <section class="summary-grid" aria-label="Resumo do clube"><article class="summary-card"><span>Cartas no clube</span><strong>${current.length}</strong></article><article class="summary-card"><span>Protegidas</span><strong>${current.filter((player) => player.protected).length}</strong></article><article class="summary-card"><span>Histórico</span><strong>${past.length}</strong></article></section>
+    ${current.length ? renderBreakdown(current) : ''}
     <section class="content-panel"><div class="panel-heading"><div><h2>Adicionar carta</h2><p>Dados registrados aqui não são enviados à EA.</p></div></div>
       <form id="player-form" class="player-form">
         <label>Nome<input name="name" required maxlength="80" autocomplete="off" /></label>
@@ -40,6 +41,22 @@ export async function renderClubView(container) {
     const query = event.target.value.toLocaleLowerCase('pt-BR');
     for (const card of container.querySelectorAll('[data-player-row]')) card.hidden = !card.dataset.playerRow.includes(query);
   });
+}
+
+function renderBreakdown(players) {
+  const fields = { position: 'Posição', league: 'Liga', club: 'Clube', rarity: 'Raridade' };
+  return `<details class="content-panel"><summary>Análise do elenco atual</summary>
+    <div class="summary-grid">${Object.entries(fields).map(([field, label]) => {
+      const counts = new Map();
+      for (const player of players) {
+        const group = player[field]?.trim() || 'Sem informação';
+        counts.set(group, (counts.get(group) ?? 0) + 1);
+      }
+      const groups = [...counts].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'pt-BR'));
+      return `<div><h3>${label}</h3><ul>${groups.map(([group, count]) => (
+        `<li>${escapeHTML(group)} · ${count}</li>`
+      )).join('')}</ul></div>`;
+    }).join('')}</div></details>`;
 }
 
 function renderPlayerTable(players, events, historical = false) {

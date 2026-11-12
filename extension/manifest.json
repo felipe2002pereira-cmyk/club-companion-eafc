@@ -1,23 +1,14 @@
 {
   "manifest_version": 3,
   "name": "Club Companion FC",
-  "version": "0.6.3",
-  "description": "Planejador local para o EA SPORTS FC Ultimate Team Web App.",
-  "permissions": ["storage"],
-  "content_scripts": [
-    {
-      "matches": [
-        "https://www.ea.com/ea-sports-fc/ultimate-team/web-app",
-        "https://www.ea.com/ea-sports-fc/ultimate-team/web-app/*"
-      ],
-      "js": ["content.js"],
-      "run_at": "document_idle"
-    }
-  ],
-  "web_accessible_resources": [
-    {
-      "resources": ["content.css"],
-      "matches": ["https://www.ea.com/*"]
-    }
-  ]
+  "version": "0.7.0",
+  "description": "Organize seu clube, planeje SBCs e registre preços localmente.",
+  "permissions": ["activeTab", "scripting"],
+  "action": {
+    "default_title": "Club Companion FC",
+    "default_popup": "popup.html"
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'none'; connect-src 'none'; base-uri 'none'; form-action 'none';"
+  }
 }

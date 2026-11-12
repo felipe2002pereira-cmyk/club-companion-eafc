@@ -1,8 +1,9 @@
 import { readAll, replaceAll, writeMany } from './database.js';
 import { validatePlayerItem } from '../domain/player-items.js';
+import { isPriceTarget } from '../domain/market-prices.js';
 
-const BACKUP_VERSION = 1;
-const STORE_NAMES = ['playerItems', 'events', 'sbcPlans', 'gallerySets', 'priceSnapshots'];
+const BACKUP_VERSION = 2;
+const STORE_NAMES = ['playerItems', 'events', 'sbcPlans', 'gallerySets', 'priceSnapshots', 'priceTargets'];
 const CSV_COLUMNS = ['instanceId', 'itemId', 'name', 'ovr', 'position', 'league', 'nation', 'club', 'rarity', 'holographic', 'tradeable', 'duplicate', 'protected', 'status', 'notes'];
 const OPTIONAL_CSV_COLUMNS = ['itemScoreOverride'];
 
@@ -19,12 +20,13 @@ export async function inspectBackup(file) {
   try { payload = JSON.parse(text); }
   catch { return { ok: false, errors: ['O arquivo não contém JSON válido.'], counts: {}, data: null }; }
 
-  if (payload?.format !== 'club-companion-backup' || !Number.isInteger(payload.schemaVersion) || payload.schemaVersion > BACKUP_VERSION) {
+  if (payload?.format !== 'club-companion-backup' || !Number.isInteger(payload.schemaVersion) || payload.schemaVersion < 1 || payload.schemaVersion > BACKUP_VERSION) {
     return { ok: false, errors: ['Formato de backup desconhecido ou mais novo que esta versão do app.'], counts: {}, data: null };
   }
 
   const errors = [];
   const data = Object.fromEntries(STORE_NAMES.map((name) => {
+    if (name === 'priceTargets' && payload.schemaVersion === 1 && payload[name] === undefined) return [name, []];
     if (!Array.isArray(payload[name])) errors.push(`O backup não contém uma lista válida para ${name}.`);
     return [name, Array.isArray(payload[name]) ? payload[name] : []];
   }));
@@ -47,6 +49,7 @@ export async function inspectBackup(file) {
       else if (storeName === 'sbcPlans' && (!Array.isArray(item.selectedInstanceIds) || !item.mode)) errors.push(`Plano SBC ${index + 1}: estrutura inválida.`);
       else if (storeName === 'gallerySets' && !item.name) errors.push(`Gallery Set ${index + 1}: nome obrigatório.`);
       else if (storeName === 'priceSnapshots' && (!item.instanceId || !['futbin','fut.gg'].includes(item.source) || !['console','pc'].includes(item.platform) || !Number.isSafeInteger(item.coins) || item.coins < 0 || !Number.isFinite(Date.parse(item.checkedAt)))) errors.push(`Cotação ${index + 1}: estrutura inválida.`);
+      else if (storeName === 'priceTargets' && !isPriceTarget(item)) errors.push(`Alvo de preço ${index + 1}: estrutura inválida.`);
       else { seenIds.add(item.id); valid.push(item); }
     });
     data[storeName] = valid;

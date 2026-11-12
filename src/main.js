@@ -5,7 +5,7 @@ import { renderSbcView } from './ui/sbc-view.js';
 import { renderGalleryView } from './ui/gallery-view.js';
 import { renderMarketView } from './ui/market-view.js';
 
-const APP_VERSION = '0.2.0';
+const APP_VERSION = location.protocol === 'chrome-extension:' ? chrome.runtime.getManifest().version : '0.2.1';
 const main = document.querySelector('#main-content');
 const status = document.querySelector('#save-status');
 const navLinks = [...document.querySelectorAll('[data-view]')];
@@ -73,7 +73,7 @@ function escapeHTML(value) {
 }
 
 async function registerServiceWorker() {
-  if (!('serviceWorker' in navigator) || location.protocol === 'file:') return;
+  if (!('serviceWorker' in navigator) || !['https:', 'http:'].includes(location.protocol)) return;
   try {
     const registration = await navigator.serviceWorker.register('./sw.js', { scope: './' });
     registration.addEventListener('updatefound', () => {

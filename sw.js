@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'club-companion-';
-const CACHE_NAME = `${CACHE_PREFIX}v0.2.0`;
+const CACHE_NAME = `${CACHE_PREFIX}v0.2.1`;
 const APP_ASSETS = ['./', './index.html', './app.webmanifest', './assets/app.css', './assets/icon.svg', './release.json', './src/main.js', './src/storage/database.js', './src/storage/backup.js', './src/domain/player-items.js', './src/domain/item-score.js', './src/domain/sbc-requirements.js', './src/domain/sbc-solver.js', './src/domain/gallery-planner.js', './src/domain/market-prices.js', './src/ui/club-view.js', './src/ui/sbc-view.js', './src/ui/gallery-view.js', './src/ui/market-view.js', './src/ui/settings-view.js'];
 
 self.addEventListener('install', (event) => {

@@ -1,31 +1,22 @@
-# Club Companion FC — extensão local
+# Club Companion FC
 
-Protótipo de extensão Chrome Manifest V3 para acompanhar o EA FC Ultimate Team Web App. O painel e as funções locais já existem; leitura do clube, preenchimento de SBC e ações sobre itens ainda precisam ser ajustados e conferidos com a Web App autenticada.
+## Instalar no Chrome
 
-## Instalação no Chrome pausada
+1. Baixe e extraia o [ZIP 0.7.0](../dist/Club-Companion-FC-v0.7.0-chrome.zip).
+2. Abra `chrome://extensions`, ative **Modo do desenvolvedor** e clique em **Carregar sem compactação**.
+3. Selecione a pasta extraída que contém `manifest.json`. Abra **Club Companion FC** no menu de extensões do Chrome e clique em **Abrir painel**.
 
-O Microsoft Defender sinalizou `content.js` como `Trojan:Script/Ulthar.A!ml`. Os pacotes 0.6.2 e 0.6.3 contêm o mesmo script. Mantenha esses pacotes em quarentena e desative a extensão em `chrome://extensions` se você já tiver carregado uma dessas versões. A classificação ainda precisa de análise.
+Mantenha as versões 0.6.2 e 0.6.3 desativadas. O Microsoft Defender sinalizou o script compartilhado por esses pacotes como `Trojan:Script/Ulthar.A!ml`. A 0.7.0 usa um painel em aba própria e começa com uma base nova. Importe um CSV ou um backup JSON do companion em **Configurações**.
 
-## Estado atual do adaptador
+## Importar cartas e planejar
 
-A estrutura autenticada observada usa `main li.listFUTItem`, com OVR, posição e nome em `.entityContainer`. A lista do clube é paginada: escaneie cada página carregada e confira a contagem. Quando FUTGenie fornece um ID no DOM, ele é usado como referência; sem esse ID, a extensão cria uma chave aproximada que pode mudar com a ordenação. Liga, nação e clube não são preenchidos pela leitura atual e devem ser importados ou corrigidos manualmente.
+- Na Web App oficial, abra o **Clube** e deixe a lista de cartas carregada. Clique no ícone da extensão e em **Importar cartas desta tela**. Repita nas outras páginas que quiser registrar. Se a tela não for reconhecida, use o CSV ou o cadastro manual.
+- A leitura captura nome, OVR, posição e raridade quando disponíveis. Clube, liga, nação e cópias idênticas que apareçam em páginas diferentes podem exigir cadastro ou correção manual. Repetir a mesma leitura preserva os registros existentes.
+- No painel, use **Clube** para análise e proteção, **SBCs** para planejar, **Gallery** para organizar sets e **Preços** para definir alvos e registrar cotações manuais. Confira e execute as ações na interface da EA.
+- A leitura usa acesso temporário à aba quando você aciona a extensão e roda apenas na Web App oficial. O painel e os dados ficam no navegador.
 
-A aba **Análise** resume somente cartas locais com estado `club`, por posição, liga, clube e raridade. Campos ausentes são contados como “Sem informação”. Ela não representa automaticamente o clube inteiro: é preciso escanear as páginas do clube, importar CSV ou cadastrar cartas. A aba **Links** abre referências externas; não carrega nem executa o código delas.
+Referências: [Paletools](https://pale.tools/fifa/paletools.html), [FUTClubAnalyzer](https://github.com/jsbsantos/FUTClubAnalyzer), [EasyFUT](https://github.com/Kava4/EasyFUT) e [FUT-Trader](https://github.com/ckalgos/FUT-Trader).
 
-O planejador SBC local propõe jogadores e exclui cartas protegidas. A área DME observada não expõe IDs estáveis dos candidatos; o botão de preenchimento não clica nessa tela. O envio ao clube depende de uma ação visível selecionada e confirmação. O envio final do SBC continua manual.
+## Gerar o ZIP
 
-`Alt+C` abre/fecha o painel, `Alt+S` lê as cartas carregadas na tela, `Alt+P` alterna o pulo de animação e `Alt+G` abre a Gallery do Paletools quando ele está carregado. O Companion detecta e mostra a versão visível, mas não copia nem executa o userscript. O seletor de destino só funciona quando detecta exatamente `v27.2.1` e encontra, no mesmo diálogo de item comprado, “Send to club” e “Send to transfer list” (ou equivalentes em português). Ao escolher um, pede confirmação e clica só no destino escolhido. A compra continua no Paletools. O pulo só clica em “Pular/Continuar” depois de você abrir um pacote; não abre nem compra pacotes.
-
-O importador aceita CSV UTF-8 com as colunas `instanceId,itemId,name,ovr,position,league,nation,club,rarity,holographic,tradeable,duplicate,protected,status,notes`. Para pontuação manual, adicione `itemScoreOverride`; os estados aceitos são `club`, `past` e `used`.
-
-## Permissões e dados
-
-- A única permissão de extensão é `storage`.
-- O script roda somente em `www.ea.com/ea-sports-fc/ultimate-team/web-app`.
-- Não acessa cookies, chamadas privadas, tráfego de rede, credenciais ou outros sites.
-- Não coleta preços automaticamente. FUTBIN/FUT.GG abrem suas listas para busca manual. Você pode salvar alvos por carta, fonte e plataforma; o aviso só aparece quando registra manualmente uma cotação igual ou abaixo do alvo. Não há preço em tempo real nem ação automática no mercado.
-- Paletools é aberto pela UI visível usando o controle `Paletools` e a ação `Open Gallery`. A extensão não instala nem atualiza o script; use a [página oficial do Paletools](https://pale.tools/fifa/paletools.html). A integração depende dos rótulos visíveis e pode exigir ajuste após atualizações.
-- FUTClubAnalyzer é referência para a análise local reimplementada nesta extensão. EasyFUT e FUT-Trader aparecem somente como links. FUT-Trader está arquivado e seu bot de mercado/CAPTCHA não é integrado.
-- A EA recomenda evitar extensões de terceiros e proíbe bots/automação. A extensão altera a UI do Web App e pode contrariar as regras da EA; você escolheu seguir com esse risco.
-
-Antes de considerar o adaptador pronto, a Web App deve ser aberta e autenticada pelo próprio usuário; nunca envie senha ou código de autenticação aqui.
+Na raiz do repositório, execute `pwsh -File scripts/package-extension.ps1`. O arquivo sai em `dist/` com os recursos da extensão e do painel.

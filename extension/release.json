@@ -1,5 +1,5 @@
 {
-  "version": "0.6.3",
+  "version": "0.7.0",
   "releasedAt": "2026-11-12",
-  "changelog": "Corrige a regra de acesso à folha de estilos no manifesto para permitir o carregamento da extensão no Chrome."
+  "changelog": "Substitui o painel injetado por uma aba própria e limita a integração com a Web App à importação de cartas visíveis sob demanda."
 }
