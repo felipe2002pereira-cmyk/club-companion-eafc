@@ -5,7 +5,7 @@ Ferramentas locais para organizar cartas do Ultimate Team e planejar SBCs: um co
 ## Componentes
 
 - **PWA na raiz:** cadastro/importação de elenco, proteção de cartas, planos de SBC tradicional e Item Score, Gallery Sets, histórico e cotações manuais. Não se conecta à conta EA.
-- **Extensão Chrome:** o botão da barra de ferramentas abre o painel e importa cartas visíveis do Clube quando solicitado. [Baixar ZIP v0.7.0](dist/Club-Companion-FC-v0.7.0-chrome.zip) · [Instalação e uso](extension/README.md).
+- **Extensão Chrome:** o botão da barra de ferramentas abre o planejador, mostra o Clube ao vivo na Web App e importa as cartas visíveis quando solicitado. [Baixar ZIP v0.7.1](dist/Club-Companion-FC-v0.7.1-chrome.zip) · [Instalação e uso](extension/README.md).
 - **Documentação em `docs/`:** decisões de produto e plano de implementação.
 
 ## Executar o PWA
